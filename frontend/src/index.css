@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+@import "tw-animate-css";
+
+@layer base {
+  :root {
+    --bg-0: #050505;
+    --bg-100: #18181b;
+    --bg-200: #27272a;
+    --bg-300: #3f3f46;
+    --text-100: #fafafa;
+    --text-200: #e4e4e7;
+    --text-300: #a1a1aa;
+    --text-400: #71717a;
+    --radius: 0.5rem;
+    
+    /* Mapping shadcn-like vars to these if needed further down */
+    --background: 240 10% 3.9%; /* fallback/legacy */
+  }
+
+  body {
+    background-color: var(--bg-0);
+    color: var(--text-100);
+  }
+}
