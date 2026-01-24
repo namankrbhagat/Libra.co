@@ -5,6 +5,9 @@ import createGlobe from "cobe";
 import { motion } from "framer-motion";
 import { IconBrandYoutubeFilled, IconSearch, IconMapPin, IconShieldCheck } from "@tabler/icons-react";
 
+import { GlowingEffect } from "@/components/ui/glowing-effect";
+import { ScrollReveal } from "@/components/ui/scroll-reveal";
+
 export function FeaturesSectionWithBentoGrid() {
   const features = [
     {
@@ -13,14 +16,14 @@ export function FeaturesSectionWithBentoGrid() {
         "Find the exact edition you need by ISBN, title, or course code. Our smart filters save you hours of searching.",
       skeleton: <SkeletonOne />,
       className:
-        "col-span-1 md:col-span-4 lg:col-span-4 border-b md:border-r border-white/10",
+        "col-span-1 md:col-span-4 lg:col-span-4",
     },
     {
       title: "Verified Student Sellers",
       description:
         "Connect with verified students from your campus. No bots, no scams, just real peers helping each other.",
       skeleton: <SkeletonTwo />,
-      className: "col-span-1 md:col-span-2 lg:col-span-2 border-b border-white/10",
+      className: "col-span-1 md:col-span-2 lg:col-span-2",
     },
     {
       title: "Safe Campus Meetups",
@@ -28,36 +31,42 @@ export function FeaturesSectionWithBentoGrid() {
         "Our platform encourages safe, public meetups on college campuses for secure book exchanges.",
       skeleton: <SkeletonThree />,
       className:
-        "col-span-1 md:col-span-3 lg:col-span-3 border-b md:border-r border-white/10",
+        "col-span-1 md:col-span-3 lg:col-span-3",
     },
     {
       title: "Active on 500+ Campuses",
       description:
         "From IIT Bombay to Delhi University, Libra.co is connecting student communities across India.",
       skeleton: <SkeletonFour />,
-      className: "col-span-1 md:col-span-3 lg:col-span-3 border-b md:border-none border-white/10",
+      className: "col-span-1 md:col-span-3 lg:col-span-3",
     },
   ];
   return (
     <div className="relative z-20 py-20 lg:py-40 max-w-7xl mx-auto bg-[#050505]">
       <div className="px-8">
-        <h4 className="text-3xl lg:text-5xl lg:leading-tight max-w-5xl mx-auto text-center tracking-tight font-medium text-white font-instrument-serif">
-          Everything you need to <span className="italic text-orange-500">buy & sell</span>
-        </h4>
+        <ScrollReveal>
+          <h4 className="text-3xl lg:text-5xl lg:leading-tight max-w-5xl mx-auto text-center tracking-tight font-medium text-white font-instrument-serif">
+            Everything you need to <span className="italic text-orange-500">buy & sell</span>
+          </h4>
+        </ScrollReveal>
 
-        <p className="text-sm lg:text-base max-w-2xl my-4 mx-auto text-neutral-400 text-center font-normal font-sans">
-          Whether you're looking to clear your shelf or find affordable reads for your next semester, we've got you covered with powerful tools.
-        </p>
+        <ScrollReveal delay={0.1}>
+          <p className="text-sm lg:text-base max-w-2xl my-4 mx-auto text-neutral-400 text-center font-normal font-sans">
+            Whether you're looking to clear your shelf or find affordable reads for your next semester, we've got you covered with powerful tools.
+          </p>
+        </ScrollReveal>
       </div>
 
-      <div className="relative">
-        <div className="grid grid-cols-1 md:grid-cols-6 lg:grid-cols-6 mt-12 xl:border rounded-md border-white/10 bg-neutral-900/20 backdrop-blur-sm">
-          {features.map((feature) => (
-            <FeatureCard key={feature.title} className={feature.className}>
-              <FeatureTitle>{feature.title}</FeatureTitle>
-              <FeatureDescription>{feature.description}</FeatureDescription>
-              <div className="h-full w-full">{feature.skeleton}</div>
-            </FeatureCard>
+      <div className="relative px-4">
+        <div className="grid grid-cols-1 md:grid-cols-6 lg:grid-cols-6 mt-12 gap-4">
+          {features.map((feature, idx) => (
+            <ScrollReveal key={feature.title} className={feature.className} delay={0.1 + idx * 0.1}>
+              <FeatureCard className="h-full">
+                <FeatureTitle>{feature.title}</FeatureTitle>
+                <FeatureDescription>{feature.description}</FeatureDescription>
+                <div className="h-full w-full">{feature.skeleton}</div>
+              </FeatureCard>
+            </ScrollReveal>
           ))}
         </div>
       </div>
@@ -70,8 +79,18 @@ const FeatureCard = ({
   className,
 }) => {
   return (
-    <div className={cn(`p-4 sm:p-8 relative overflow-hidden`, className)}>
-      {children}
+    <div className={cn(`relative rounded-[1.25rem] border-[0.75px] border-white/10 p-2 md:rounded-[1.5rem] md:p-3`, className)}>
+      <GlowingEffect
+        spread={40}
+        glow={true}
+        disabled={false}
+        proximity={64}
+        inactiveZone={0.01}
+        borderWidth={3}
+      />
+      <div className="relative flex h-full flex-col justify-between overflow-hidden rounded-xl border-[0.75px] border-white/10 bg-neutral-900/20 backdrop-blur-sm p-6 shadow-sm">
+        {children}
+      </div>
     </div>
   );
 };

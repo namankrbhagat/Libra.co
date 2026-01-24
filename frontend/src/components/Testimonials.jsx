@@ -1,7 +1,8 @@
 
 import { AnimatedTestimonials } from "@/components/ui/animated-testimonials";
+import { ScrollReveal } from "@/components/ui/scroll-reveal";
 
-export function AnimatedTestimonialsDemo() {
+export function Testimonials() {
   const testimonials = [
     {
       quote:
@@ -46,12 +47,16 @@ export function AnimatedTestimonialsDemo() {
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[500px] bg-gradient-to-b from-orange-500/5 to-transparent blur-[100px] pointer-events-none" />
 
       <div className="relative z-10 max-w-7xl mx-auto px-6 text-center mb-12">
-        <h2 className="text-4xl md:text-5xl font-instrument-serif text-white mb-6">
-          Loved by Scholars <span className="italic text-white/70">& Students</span>
-        </h2>
-        <p className="text-white/60 max-w-2xl mx-auto font-sans">
-          Join thousands of students who are saving money and building their libraries with Libra.co.
-        </p>
+        <ScrollReveal>
+          <h2 className="text-4xl md:text-5xl font-instrument-serif text-white mb-6">
+            Loved by <span className="italic text-orange-500">Scholars & Students</span>
+          </h2>
+        </ScrollReveal>
+        <ScrollReveal delay={0.1}>
+          <p className="text-white/60 max-w-2xl mx-auto font-sans">
+            Join thousands of students who are saving money and building their libraries with Libra.co.
+          </p>
+        </ScrollReveal>
       </div>
 
       <AnimatedTestimonials testimonials={testimonials} autoplay={true} />

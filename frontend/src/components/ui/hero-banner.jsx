@@ -1,5 +1,6 @@
-
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import BlurText from './blur-text';
 
 const ResponsiveHeroBanner = ({
   logoUrl = "https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/febf2421-4a9a-42d6-871d-ff4f9518021c_1600w.png",
@@ -13,6 +14,7 @@ const ResponsiveHeroBanner = ({
   ],
   ctaButtonText = "Reserve Seat",
   ctaButtonHref = "#",
+  user = null,
   badgeLabel = "New",
   badgeText = "First Commercial Flight to Mars 2026",
   title = "Journey Beyond Earth",
@@ -67,16 +69,26 @@ const ResponsiveHeroBanner = ({
                     {link.label}
                   </a>
                 ))}
-                <a
-                  href={ctaButtonHref}
-                  className="ml-1 inline-flex items-center gap-2 rounded-full bg-white px-3.5 py-2 text-sm font-medium text-neutral-900 hover:bg-white/90 font-sans transition-colors"
-                >
-                  {ctaButtonText}
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
-                    <path d="M7 7h10v10" />
-                    <path d="M7 17 17 7" />
-                  </svg>
-                </a>
+                {user ? (
+                  <Link to="/profile" className="ml-1 inline-flex items-center justify-center rounded-full bg-white/10 p-1 hover:bg-white/20 transition-colors ring-1 ring-white/10">
+                    <img
+                      src={user.avatar || "https://cdn-icons-png.flaticon.com/128/3177/3177440.png"}
+                      alt="Profile"
+                      className="h-8 w-8 rounded-full object-cover"
+                    />
+                  </Link>
+                ) : (
+                  <Link
+                    to={ctaButtonHref}
+                    className="ml-1 inline-flex items-center gap-2 rounded-full bg-white px-3.5 py-2 text-sm font-medium text-neutral-900 hover:bg-white/90 font-sans transition-colors"
+                  >
+                    {ctaButtonText}
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                      <path d="M7 7h10v10" />
+                      <path d="M7 17 17 7" />
+                    </svg>
+                  </Link>
+                )}
               </div>
             </nav>
 
@@ -108,11 +120,22 @@ const ResponsiveHeroBanner = ({
               </span>
             </div>
 
-            <h1 className="sm:text-5xl md:text-6xl lg:text-7xl leading-tight text-4xl text-white tracking-tight font-instrument-serif font-normal animate-fade-slide-in-2">
-              {title}
-              <br className="hidden sm:block text-transparent" />
-              <span className="italic">{titleLine2}</span>
-            </h1>
+            <div className="flex flex-col items-center justify-center">
+              <BlurText
+                text={title}
+                delay={150}
+                animateBy="words"
+                direction="top"
+                className="sm:text-5xl md:text-6xl lg:text-7xl leading-tight text-4xl text-white tracking-tight font-instrument-serif font-normal justify-center mb-0"
+              />
+              <BlurText
+                text={titleLine2}
+                delay={150}
+                animateBy="words"
+                direction="top"
+                className="sm:text-5xl md:text-6xl lg:text-7xl leading-tight text-4xl text-white tracking-tight font-instrument-serif font-italic italic justify-center mt-[-0.2em] md:mt-[-0.1em]"
+              />
+            </div>
 
             <p className="sm:text-lg animate-fade-slide-in-3 text-base text-white/80 max-w-2xl mt-6 mx-auto">
               {description}

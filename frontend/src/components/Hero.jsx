@@ -1,10 +1,11 @@
 
 import React from 'react';
-import ResponsiveHeroBanner from './ui/responsive-hero-banner';
+import ResponsiveHeroBanner from './ui/hero-banner';
 
-const HeroDemo = () => {
+const HeroDemo = ({ user }) => {
   return (
     <ResponsiveHeroBanner
+      user={user}
 
       navLinks={[
         { label: "Home", href: "/", isActive: true },
