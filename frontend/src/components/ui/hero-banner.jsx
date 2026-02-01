@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import BlurText from './blur-text';
+import { StardustButton } from './stardust-button';
 
 const ResponsiveHeroBanner = ({
   logoUrl = "https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/febf2421-4a9a-42d6-871d-ff4f9518021c_1600w.png",
@@ -33,6 +34,7 @@ const ResponsiveHeroBanner = ({
     { logoUrl: "https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/2ed33c8b-b8b2-4176-967f-3d785fed07d8_1600w.png", href: "#" }
   ]
 }) => {
+  const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
@@ -60,14 +62,23 @@ const ResponsiveHeroBanner = ({
             <nav className="hidden md:flex items-center gap-2">
               <div className="flex items-center gap-1 rounded-full bg-white/5 px-1 py-1 ring-1 ring-white/10 backdrop-blur">
                 {navLinks.map((link, index) => (
-                  <a
-                    key={index}
-                    href={link.href}
-                    className={`px-3 py-2 text-sm font-medium hover:text-white font-sans transition-colors ${link.isActive ? 'text-white/90' : 'text-white/80'
-                      }`}
-                  >
-                    {link.label}
-                  </a>
+                  link.href.startsWith('#') ? (
+                    <a
+                      key={index}
+                      href={link.href}
+                      className={`px-3 py-2 text-sm font-medium hover:text-white font-sans transition-colors ${link.isActive ? 'text-white/90' : 'text-white/80'}`}
+                    >
+                      {link.label}
+                    </a>
+                  ) : (
+                    <Link
+                      key={index}
+                      to={link.href}
+                      className={`px-3 py-2 text-sm font-medium hover:text-white font-sans transition-colors ${link.isActive ? 'text-white/90' : 'text-white/80'}`}
+                    >
+                      {link.label}
+                    </Link>
+                  )
                 ))}
                 {user ? (
                   <Link to="/profile" className="ml-1 inline-flex items-center justify-center rounded-full bg-white/10 p-1 hover:bg-white/20 transition-colors ring-1 ring-white/10">
@@ -141,26 +152,24 @@ const ResponsiveHeroBanner = ({
               {description}
             </p>
 
-            <div className="flex flex-col sm:flex-row sm:gap-4 mt-10 gap-3 items-center justify-center animate-fade-slide-in-4">
-              <a
-                href={primaryButtonHref}
-                className="inline-flex items-center gap-2 hover:bg-white/15 text-sm font-medium text-white bg-white/10 ring-white/15 ring-1 rounded-full py-3 px-5 font-sans transition-colors"
+            <div className="flex flex-col sm:flex-row sm:gap-6 mt-12 gap-6 items-center justify-center animate-fade-slide-in-4">
+              <div
+                onClick={() => primaryButtonHref.startsWith('#') ? (window.location.href = primaryButtonHref) : navigate(primaryButtonHref)}
+                className="transform hover:scale-105 transition-transform duration-300"
               >
-                {primaryButtonText}
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
-                  <path d="M5 12h14" />
-                  <path d="m12 5 7 7-7 7" />
-                </svg>
-              </a>
-              <a
-                href={secondaryButtonHref}
-                className="inline-flex items-center gap-2 rounded-full bg-transparent px-5 py-3 text-sm font-medium text-white/90 hover:text-white font-sans transition-colors"
+                <StardustButton variant="orange">
+                  {primaryButtonText}
+                </StardustButton>
+              </div>
+
+              <div
+                onClick={() => secondaryButtonHref.startsWith('#') ? (window.location.href = secondaryButtonHref) : navigate(secondaryButtonHref)}
+                className="transform hover:scale-105 transition-transform duration-300"
               >
-                {secondaryButtonText}
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
-                  <path d="M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z" />
-                </svg>
-              </a>
+                <StardustButton variant="dark">
+                  {secondaryButtonText}
+                </StardustButton>
+              </div>
             </div>
           </div>
 

@@ -1,14 +1,20 @@
 import express from 'express'
 import { configDotenv } from 'dotenv'
 import { connectDB } from './lib/db.js';
-import authRoute from './routes/auth.routes.js'
+import userRoute from './routes/user.route.js';
+import authRoute from './routes/auth.routes.js';
+import bookRoute from './routes/book.route.js';
+import cookieParser from 'cookie-parser';
 
 configDotenv();
 
 const app = express();
 
 app.use(express.json());
-app.use("/api/auth",authRoute);
+app.use(cookieParser());
+app.use("/api/auth", authRoute);
+app.use("/api/user", userRoute);
+app.use("/api/book", bookRoute);
 
 
 

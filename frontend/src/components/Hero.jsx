@@ -7,13 +7,7 @@ const HeroDemo = ({ user }) => {
     <ResponsiveHeroBanner
       user={user}
 
-      navLinks={[
-        { label: "Home", href: "/", isActive: true },
-        { label: "Buy Books", href: "#buy" },
-        { label: "Sell Books", href: "#sell" },
-        { label: "Requests", href: "#requests" },
-        { label: "About", href: "#about" }
-      ]}
+      navLinks={[]} // User requested to remove navbar links
       badgeLabel="New"
       badgeText="Start Selling for Free"
       title="Smarter Way to Buy"
@@ -21,9 +15,9 @@ const HeroDemo = ({ user }) => {
       description="Libra.co connects you with students on your campus to buy and sell second-hand books instantly. Save money, save paper, and build your library."
       ctaButtonText="Join Now"
       ctaButtonHref="/signup"
-      primaryButtonText="Find Books Nearby"
+      primaryButtonText="Buy Books"
       primaryButtonHref="/buy"
-      secondaryButtonText="List a Book"
+      secondaryButtonText="Sell Books"
       secondaryButtonHref="/sell"
       partnersTitle="Trusted by students from top boards & institutes"
       partners={[

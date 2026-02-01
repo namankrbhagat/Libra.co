@@ -1,6 +1,6 @@
 import React, { Suspense, lazy } from 'react';
 import { Toaster } from 'react-hot-toast';
-import { Route, Routes } from 'react-router-dom';
+import { Route, Routes, Navigate } from 'react-router-dom';
 import BookLoader from "@/components/ui/book-loader";
 
 import { SignIn1 } from "@/components/ui/loginPage";
@@ -13,6 +13,10 @@ const Home = lazy(() => {
     }, 1000);
   });
 });
+
+const Profile = lazy(() => import('@/pages/Profile'));
+const SellBook = lazy(() => import('@/pages/SellBook'));
+const BuyBooks = lazy(() => import('@/pages/BuyBooks'));
 
 const LoginPage = ({ setUser }) => (
   <div className="relative">
@@ -42,6 +46,7 @@ const SignupPage = ({ setUser }) => (
 
 const App = () => {
   const [user, setUser] = React.useState(null);
+  const [isAuthChecking, setIsAuthChecking] = React.useState(true);
 
   React.useEffect(() => {
     // Check if user info is stored in localStorage
@@ -49,7 +54,16 @@ const App = () => {
     if (storedUser) {
       setUser(JSON.parse(storedUser));
     }
+    setIsAuthChecking(false);
   }, []);
+
+  if (isAuthChecking) {
+    return (
+      <div className="h-screen w-full flex items-center justify-center bg-[#050505]">
+        <BookLoader />
+      </div>
+    );
+  }
 
   return (
     <main className="bg-[#050505] min-h-screen text-white">
@@ -65,6 +79,9 @@ const App = () => {
           <Route path="/" element={<Home user={user} />} />
           <Route path="/login" element={<LoginPage setUser={setUser} />} />
           <Route path="/signup" element={<SignupPage setUser={setUser} />} />
+          <Route path="/profile" element={user ? <Profile user={user} setUser={setUser} /> : <Navigate to="/login" />} />
+          <Route path="/sell" element={user ? <SellBook user={user} /> : <Navigate to="/login" />} />
+          <Route path="/buy" element={user ? <BuyBooks user={user} /> : <Navigate to="/login" />} />
         </Routes>
       </Suspense>
     </main>

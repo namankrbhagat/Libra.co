@@ -2,23 +2,23 @@ import mongoose from "mongoose";
 
 const bookingSchema = new mongoose.Schema(
   {
-    bookings:{
-      type:mongoose.Types.ObjectId,
-      ref:"User",
+    bookings: {
+      type: mongoose.Types.ObjectId,
+      ref: "User",
     },
 
-    book:{
-      type:mongoose.Types.ObjectId,
-      ref: "books"
+    book: {
+      type: mongoose.Types.ObjectId,
+      ref: "Books"
     },
-    status :{
-      type:String,
+    status: {
+      type: String,
       default: "Booked",
-      enum : ["Booked","Not Booked", "Sold"]
+      enum: ["Booked", "Not Booked", "Sold"]
     }
   },
-  {timestamps:true}
+  { timestamps: true }
 )
 
-const Booking = mongoose.model("Booking",bookingSchema);
+const Booking = mongoose.model("Booking", bookingSchema);
 export default Booking;
