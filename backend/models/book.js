@@ -45,10 +45,22 @@ const bookSchema = new mongoose.Schema(
     backImage: {
       type: String,
       required: true,
+    },
+    location: {
+      type:{
+        type : String,
+        enum : ['Point'],
+        default: 'Point'
+      },
+      coordinates: {
+        type:[Number],
+        required:true
+      }
     }
   },
   { timestamps: true }
 )
+bookSchema.index({location : "2dsphere"})
 
 const Books = mongoose.model("Books", bookSchema);
 export default Books;

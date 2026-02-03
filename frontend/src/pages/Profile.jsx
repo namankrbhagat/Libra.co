@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Mail, Phone, MapPin, Package, Clock, CheckCircle, XCircle, ShoppingBag, LogOut, ArrowLeft } from 'lucide-react';
+import { Mail, Phone, MapPin, Package, Clock, CheckCircle, XCircle, ShoppingBag, LogOut, ArrowLeft, ShieldCheck, Loader2, Camera } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
@@ -13,6 +13,15 @@ const ProfilePage = ({ user, setUser }) => {
     buyingHistory: []
   });
 
+  // OTP Modal State
+  const [otpModal, setOtpModal] = useState({ open: false, bookId: null, bookTitle: '' });
+  const [otpInput, setOtpInput] = useState('');
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+
+  // Image Preview State
+  const [previewImg, setPreviewImg] = useState(null);
+
   useEffect(() => {
     const fetchHistory = async () => {
       try {
@@ -21,7 +30,6 @@ const ProfilePage = ({ user, setUser }) => {
           const result = await res.json();
           setData(result);
         } else {
-          // Silently fail or log, as it might be empty
           console.error("Failed to fetch history");
         }
       } catch (error) {
@@ -56,20 +64,12 @@ const ProfilePage = ({ user, setUser }) => {
       const res = await fetch(`/api/book/${bookId}/cancel`, { method: 'POST' });
       if (res.ok) {
         toast.success("Booking cancelled successfully");
-        // Update local state to remove the cancelled book
         setData(prev => ({
           ...prev,
           buyingStats: { ...prev.buyingStats, booked: prev.buyingStats.booked - 1 },
           buyingHistory: prev.buyingHistory.filter(item => item._id !== bookId)
         }));
-        // Note: If you want to keep it in history but mark as cancelled, you'd update instead of filter.
-        // But usually cancelled bookings are removed from "Active/Booked" lists or moved to a cancelled list.
-        // Given the stats logic, removing it from 'booked' list seems appropriate or we should refetch.
-        // Let's refetch to be safe and get accurate updated state if structure is complex.
-        // Actually, manual update is faster UI. Let's stick to manual update but maybe we need to know if it moves to another status?
-        // For now, let's just remove it from the view or refresh.
 
-        // Re-fetching is safer to ensure consistency with backend
         const historyRes = await fetch('/api/user/history');
         if (historyRes.ok) {
           const result = await historyRes.json();
@@ -81,6 +81,97 @@ const ProfilePage = ({ user, setUser }) => {
     } catch (error) {
       console.error("Error cancelling:", error);
       toast.error("Something went wrong");
+    }
+  };
+
+  const initVerification = async (book) => {
+    setOtpModal({ open: true, bookId: book._id, bookTitle: book.title });
+    setOtpLoading(true);
+    setOtpInput('');
+
+    try {
+      const res = await fetch(`/api/book/${book._id}/otp/send`, { method: 'POST' });
+      const result = await res.json();
+      if (res.ok) {
+        toast.success("OTP sent to buyer's phone");
+      } else {
+        toast.error(result.message || "Failed to send OTP");
+        setOtpModal({ open: false, bookId: null, bookTitle: '' });
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("Error sending OTP");
+      setOtpModal({ open: false, bookId: null, bookTitle: '' });
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const verifyOTP = async () => {
+    if (!otpInput) return toast.error("Please enter OTP");
+    setVerifying(true);
+    try {
+      const res = await fetch(`/api/book/${otpModal.bookId}/otp/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ otp: otpInput })
+      });
+      const result = await res.json();
+
+      if (res.ok) {
+        toast.success("Sale completed! Book marked as Sold.");
+        setOtpModal({ open: false, bookId: null, bookTitle: '' });
+
+        setLoading(true);
+        const historyRes = await fetch('/api/user/history');
+        if (historyRes.ok) {
+          setData(await historyRes.json());
+        }
+        setLoading(false);
+      } else {
+        toast.error(result.message || "Verification failed");
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("Error verifying OTP");
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const base64Image = reader.result;
+        setPreviewImg(base64Image);
+
+        // Upload to backend
+        try {
+          const res = await fetch('/api/auth/update-profile', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ avatar: base64Image })
+          });
+          const result = await res.json();
+          if (res.ok) {
+            toast.success("Profile picture updated!");
+            // Update global user state (and localStorage)
+            if (setUser) {
+              const updatedUser = { ...user, avatar: result.updatedUser.avatar };
+              setUser(updatedUser);
+              localStorage.setItem("user", JSON.stringify(updatedUser)); // Assuming 'user' is the key
+            }
+          } else {
+            toast.error(result.message || "Failed to update profile picture");
+          }
+        } catch (error) {
+          console.error("Error upload:", error);
+          toast.error("Error updating profile picture");
+        }
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -131,10 +222,20 @@ const ProfilePage = ({ user, setUser }) => {
             <div className="relative group">
               <div className="absolute -inset-0.5 bg-gradient-to-br from-orange-500 to-blue-500 rounded-full opacity-70 blur group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
               <img
-                src={user?.avatar || "https://cdn-icons-png.flaticon.com/128/3177/3177440.png"}
+                src={previewImg || user?.avatar || "https://cdn-icons-png.flaticon.com/128/3177/3177440.png"}
                 alt={user?.fullName || "User"}
                 className="relative w-24 h-24 md:w-32 md:h-32 rounded-full object-cover border-4 border-[#050505]"
               />
+              <label htmlFor="avatar-upload" className="absolute bottom-0 right-0 bg-neutral-800 p-2 rounded-full border border-white/10 cursor-pointer hover:bg-neutral-700 transition-colors z-20">
+                <Camera className="w-4 h-4 text-white/60 group-hover:text-white" />
+                <input
+                  type="file"
+                  id="avatar-upload"
+                  className="hidden"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                />
+              </label>
             </div>
 
             {/* User Details */}
@@ -149,14 +250,15 @@ const ProfilePage = ({ user, setUser }) => {
                   <Mail className="w-4 h-4 text-orange-500" />
                   <span>{user?.email || "email@example.com"}</span>
                 </div>
+                <div className="flex items-center gap-2 bg-white/5 px-3 py-1.5 rounded-full border border-white/5">
+                  <Phone className="w-4 h-4 text-blue-500" />
+                  <span>{user?.phone || "No phone added"}</span>
+                </div>
               </div>
             </div>
 
             {/* Actions */}
             <div className="flex gap-3">
-              <button className="px-5 py-2 rounded-full border border-white/10 hover:bg-white/10 transition-colors text-sm text-white/80">
-                Edit Profile
-              </button>
               <button onClick={handleLogout} className="px-5 py-2 rounded-full border border-red-500/20 hover:bg-red-500/10 text-red-400 transition-colors text-sm flex items-center gap-2">
                 <LogOut className="w-4 h-4" />
                 Logout
@@ -207,7 +309,18 @@ const ProfilePage = ({ user, setUser }) => {
                           <span>{item.date}</span>
                         </div>
                       </div>
-                      <StatusBadge status={item.status} />
+                      <div className="flex items-center gap-2">
+                        <StatusBadge status={item.status} />
+                        {(item.status === 'Booked') && (
+                          <button
+                            onClick={() => initVerification(item)}
+                            className="bg-green-500/10 text-green-500 p-1.5 rounded hover:bg-green-500/20 transition-colors border border-green-500/20"
+                            title="Complete Sale"
+                          >
+                            <ShieldCheck className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
                     </div>
                   ))
               }
@@ -271,8 +384,62 @@ const ProfilePage = ({ user, setUser }) => {
 
         </div>
       </div>
+
+      {/* OTP Modal */}
+      {otpModal.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="bg-neutral-900 border border-white/10 rounded-2xl p-6 w-full max-w-md shadow-xl relative animate-in fade-in zoom-in duration-200">
+            <button
+              onClick={() => setOtpModal({ open: false, bookId: null, bookTitle: '' })}
+              className="absolute top-4 right-4 text-white/40 hover:text-white"
+            >
+              <XCircle className="w-5 h-5" />
+            </button>
+
+            <h3 className="text-xl font-instrument-serif text-white mb-2">Complete Sale</h3>
+            <p className="text-white/60 text-sm mb-6">
+              Ask the buyer for the OTP sent to their phone to verify the handover of
+              <span className="text-orange-500 font-medium ml-1">{otpModal.bookTitle}</span>.
+            </p>
+
+            {otpLoading ? (
+              <div className="flex flex-col items-center py-8">
+                <Loader2 className="w-8 h-8 text-orange-500 animate-spin mb-3" />
+                <span className="text-sm text-white/40">Sending OTP...</span>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div>
+                  <input
+                    type="text"
+                    placeholder="Enter 6-digit OTP"
+                    value={otpInput}
+                    onChange={(e) => setOtpInput(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-center text-2xl tracking-widest focus:outline-none focus:border-orange-500/50 transition-all placeholder:text-white/10"
+                  />
+                </div>
+
+                <button
+                  onClick={verifyOTP}
+                  disabled={verifying || otpInput.length !== 6}
+                  className="w-full py-3 bg-white text-black font-medium rounded-xl hover:bg-neutral-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {verifying && <Loader2 className="w-4 h-4 animate-spin" />}
+                  Verify & Complete
+                </button>
+
+                <p className="text-xs text-center text-white/30">
+                  Not confirmed? <button onClick={() => initVerification({ _id: otpModal.bookId, title: otpModal.bookTitle })} className="text-orange-500 hover:underline">Resend OTP</button>
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };
 
 export default ProfilePage;
+

@@ -12,6 +12,8 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@api/fast2sms": "file:.api/apis/fast2sms",
+    "axios": "^1.13.4",
     "bcryptjs": "^3.0.3",
     "cloudinary": "^2.9.0",
     "cookie-parser": "^1.4.7",
@@ -21,6 +23,8 @@
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.1.5",
     "multer": "^2.0.2",
-    "nodemon": "^3.1.11"
+    "node-appwrite": "^22.0.0",
+    "nodemon": "^3.1.11",
+    "twilio": "^5.12.0"
   }
 }

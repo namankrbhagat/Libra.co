@@ -8,6 +8,7 @@ const SignUp = ({ setUser }) => {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -16,7 +17,7 @@ const SignUp = ({ setUser }) => {
   };
 
   const handleSignUp = async () => {
-    if (!fullName || !email || !password) {
+    if (!fullName || !email || !password || !phone) {
       toast.error("Please fill in all fields.");
       return;
     }
@@ -32,7 +33,7 @@ const SignUp = ({ setUser }) => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ fullName, email, password }),
+        body: JSON.stringify({ fullName, email, password, phone }),
       });
 
       const data = await response.json();
@@ -99,6 +100,15 @@ const SignUp = ({ setUser }) => {
                 value={email}
                 className="w-full px-5 py-4 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 text-sm focus:outline-none focus:bg-white/10 focus:border-orange-500/50 transition-all font-sans"
                 onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+            <div className="group relative">
+              <input
+                placeholder="Phone Number"
+                type="tel"
+                value={phone}
+                className="w-full px-5 py-4 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 text-sm focus:outline-none focus:bg-white/10 focus:border-orange-500/50 transition-all font-sans"
+                onChange={(e) => setPhone(e.target.value)}
               />
             </div>
             <div className="group relative">

@@ -4,9 +4,9 @@ import { generateToken } from '../lib/util.js';
 import cloudinary from '../lib/cloudinary.js';
 
 export const signup = async (req, res) => {
-  const { fullName, email, password } = req.body;
+  const { fullName, email, password, phone } = req.body;
   try {
-    if (!fullName || !email || !password) {
+    if (!fullName || !email || !password || !phone) {
       return res.status(400).json({ message: "Please enter all the fields" })
     }
 
@@ -23,7 +23,8 @@ export const signup = async (req, res) => {
 
     const newUser = new User({
       fullName, email,
-      password: hashedPass
+      password: hashedPass,
+      phone
     })
 
     if (newUser) {
@@ -34,6 +35,7 @@ export const signup = async (req, res) => {
         _id: newUser._id,
         fullName: newUser.fullName,
         email: newUser.email,
+        phone: newUser.phone,
         avatar: newUser.avatar,
       })
 
@@ -50,7 +52,7 @@ export const login = async (req, res) => {
 
   const { email, password } = req.body;
   try {
-    const user = await User.findOne({email});
+    const user = await User.findOne({ email });
 
     if (!user) res.status(400).json({ message: "Invalid Credentials" })
 
@@ -64,6 +66,7 @@ export const login = async (req, res) => {
       _id: user._id,
       fullName: user.fullName,
       email: user.email,
+      phone: user.phone,
       avatar: user.avatar,
     });
 
@@ -89,36 +92,36 @@ export const logout = async (req, res) => {
   }
 }
 
-export const updateProfile = async(req,res) => {
+export const updateProfile = async (req, res) => {
   try {
-    const {avatar} = req.body;
+    const { avatar } = req.body;
     const userId = req.user._id;
 
-    if(!avatar){
+    if (!avatar) {
       return res.status(400).json({
-        message:"Profile pic is required"
+        message: "Profile pic is required"
       })
     }
 
-    const uploadResponse = await cloudinary.uploader.upload(avatar,{
-      folder:"profile-pics"
+    const uploadResponse = await cloudinary.uploader.upload(avatar, {
+      folder: "profile-pics"
     })
 
-    const updatedUser = User.findByIdAndUpdate(
+    const updatedUser = await User.findByIdAndUpdate(
       userId,
-      {avatar: uploadResponse.secure_url},
-      {new: true}
+      { avatar: uploadResponse.secure_url },
+      { new: true }
     )
 
-    res.status(400).json({
-      message:"Profile Updated",updatedUser
+    res.status(200).json({
+      message: "Profile Updated", updatedUser
     })
   } catch (error) {
-    console.log("Error in updateProfile : ",error);
+    console.log("Error in updateProfile : ", error);
     res.status(400).json({
-      message:"Internal Server Error",
-      error : error.message,
-      cloudinaryError:error.error // Cloudinary Specific
+      message: "Internal Server Error",
+      error: error.message,
+      cloudinaryError: error.error // Cloudinary Specific
     })
   }
 }

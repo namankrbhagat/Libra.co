@@ -1,6 +1,8 @@
 import Books from "../models/book.js";
 import cloudinary from "../lib/cloudinary.js";
 import User from "../models/user.js";
+import OTP from "../models/otp.js";
+import { sendOtpSMS } from "../lib/otp.js";
 
 import Booking from "../models/booking.js";
 
@@ -8,10 +10,10 @@ import Booking from "../models/booking.js";
 
 export const createBook = async (req, res) => {
   try {
-    const { title, author, category, price, desc, address } = req.body;
+    const { title, author, category, price, desc, address, location } = req.body;
 
     // Validation for text fields
-    if (!title || !author || !category || !price || !desc) {
+    if (!title || !author || !category || !price || !desc || !location) {
       return res.status(400).json({ message: "All text fields are required" });
     }
 
@@ -50,6 +52,18 @@ export const createBook = async (req, res) => {
       return res.status(400).json({ message: "Image upload failed" })
     }
 
+    let locationData;
+    try {
+      const parsedLoc = JSON.parse(location);
+
+      locationData = {
+        type: "Point",
+        coordinates: [parsedLoc.longitude, parsedLoc.latitude]
+      }
+    } catch (error) {
+      res.status(400).json({ message: "Invalid location format" })
+    }
+
 
     const newBook = new Books({
       title,
@@ -60,7 +74,7 @@ export const createBook = async (req, res) => {
       frontImage: frontImageURL,
       backImage: backImageURL,
       seller: req.user._id,
-
+      location: locationData
     })
 
     await newBook.save();
@@ -73,13 +87,31 @@ export const createBook = async (req, res) => {
 };
 
 export const getAllBooks = async (req, res) => {
+
   try {
-    const books = await Books.find().populate("seller", "fullName email avatar address").sort({ createdAt: -1 });
+    const { lat, long, distance } = req.query;
+    let query = { status: "Available" }; // Only show available books by default
+
+    if (lat && long && distance) {
+      const radiusInMeters = parseFloat(distance) * 1000;
+      query.location = {
+        $near: {
+          $geometry: {
+            type: 'Point',
+            coordinates: [parseFloat(long), parseFloat(lat)]
+          },
+          $maxDistance: radiusInMeters
+        }
+      }
+    }
+
+    const books = await Books.find(query).populate("seller", "fullName email avatar address").sort({ createdAt: -1 });
     res.status(200).json(books);
   } catch (error) {
     console.log("Error in getAllBooks controller", error.message);
     res.status(500).json({ message: "Internal Server Error" });
   }
+
 };
 
 export const bookBook = async (req, res) => {
@@ -142,3 +174,113 @@ export const cancelBook = async (req, res) => {
     res.status(500).json({ message: "Internal Server Error" });
   }
 }
+
+export const sendSaleOTP = async (req, res) => {
+  try {
+    const bookId = req.params.id;
+    const sellerId = req.user._id;
+
+    const book = await Books.findById(bookId).populate('buyer');
+    if (!book) return res.status(404).json({ message: "Book not found" });
+
+    if (book.seller.toString() !== sellerId.toString()) {
+      return res.status(403).json({ message: "You are not the seller of this book" });
+    }
+
+    if (book.status !== "Booked" || !book.buyer) {
+      return res.status(400).json({ message: "Book is not currently booked" });
+    }
+
+    const buyer = book.buyer;
+    if (!buyer.phone) {
+      return res.status(400).json({ message: "Buyer does not have a phone number linked" });
+    }
+
+    // Generate 6-digit OTP
+    const otpValue = Math.floor(100000 + Math.random() * 900000).toString();
+    console.log("-----------------------------------------");
+    console.log(`[DEBUG] Generated OTP for Buyer ${buyer._id}: ${otpValue}`);
+    console.log("-----------------------------------------");
+
+    // Save to DB (upsert if exists for this book/user combo to avoid duplicates)
+    await OTP.findOneAndDelete({ bookId, userId: buyer._id }); // Clear old OTPs
+    const newOTP = new OTP({
+      userId: buyer._id,
+      bookId: bookId,
+      otp: otpValue
+    });
+    await newOTP.save();
+
+    // Send SMS
+    try {
+      await sendOtpSMS(buyer.phone, otpValue);
+      res.status(200).json({ message: "OTP sent to buyer's phone" });
+    } catch (smsError) {
+      console.error("SMS sending failed:", smsError);
+      res.status(500).json({ message: "Failed to send SMS", error: smsError.message });
+    }
+
+  } catch (error) {
+    console.error("Error in sendSaleOTP:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+export const verifySaleOTP = async (req, res) => {
+  try {
+    const bookId = req.params.id;
+    const sellerId = req.user._id;
+    const { otp } = req.body;
+
+    if (!otp) return res.status(400).json({ message: "OTP is required" });
+
+    const book = await Books.findById(bookId);
+    if (!book) return res.status(404).json({ message: "Book not found" });
+
+    if (book.seller.toString() !== sellerId.toString()) {
+      return res.status(403).json({ message: "You are not the seller" });
+    }
+
+    if (book.status !== "Booked" || !book.buyer) {
+      return res.status(400).json({ message: "Book is not booked properly" });
+    }
+
+    // Find OTP
+    const otpRecord = await OTP.findOne({
+      bookId: bookId,
+      userId: book.buyer,
+      otp: otp
+    });
+
+    if (!otpRecord) {
+      return res.status(400).json({ message: "Invalid or expired OTP" });
+    }
+
+    // OTP Verified - Complete Sale
+    book.status = "Sold";
+    await book.save();
+
+    // Update Booking status
+    // Find the booking for this book and buyer
+    // Note: Creating a 'Sold' status in Booking model might be needed if it restricts enums, 
+    // but assuming standard string or matching enums.
+
+    // Check if Booking model import is available nearby or import it
+    // Actually, I need to make sure Booking is imported if I use it.
+    // It is imported at the top of file: import Booking from "../models/booking.js";
+
+    await Booking.findOneAndUpdate(
+      { book: bookId, bookings: book.buyer },
+      { status: "Sold" }
+    );
+
+    // Delete used OTP
+    await OTP.deleteOne({ _id: otpRecord._id });
+
+    res.status(200).json({ message: "Sale completed successfully!", book });
+
+  } catch (error) {
+    console.error("Error in verifySaleOTP:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};

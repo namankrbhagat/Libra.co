@@ -24,6 +24,7 @@ const SellBook = ({ user }) => {
     price: '',
     desc: '',
     address: user?.address || '', // Pre-fill if available
+    location: null, // { latitude, longitude }
     frontImage: null,
     backImage: null
   });
@@ -33,62 +34,22 @@ const SellBook = ({ user }) => {
     backImage: null
   });
 
-  const categories = [
-    "Engineering", "Medical", "Science", "Arts", "Business", "Novel", "Children", "Commerce", "Fiction", "Non-Fiction", "Others"
-  ];
-
-  // ... (handlers remain the same) 
-
+  const categories = ["Engineering", "Medical", "Science", "Arts", "Business", "Novel", "Children", "Commerce", "Fiction", "Non-Fiction", "Others"];
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleGetLocation = () => {
-    if (navigator.geolocation) {
-      toast.loading("Fetching location...", { id: 'loc' });
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          const { latitude, longitude } = position.coords;
-          // Simple display for now, ideally use a reverse geocoding API
-          const locString = `Lat: ${latitude.toFixed(4)}, Long: ${longitude.toFixed(4)}`;
-
-          // Try to fetch address from OpenStreetMap (Free, no key)
-          try {
-            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
-            const data = await res.json();
-            if (data.display_name) {
-              setFormData(prev => ({ ...prev, address: data.display_name }));
-              toast.success("Address found!", { id: 'loc' });
-              return;
-            }
-          } catch (err) {
-            console.error("Geocoding failed", err);
-          }
-
-          setFormData(prev => ({ ...prev, address: locString }));
-          toast.success("Coords fetched. Please verify address.", { id: 'loc' });
-        },
-        (error) => {
-          console.error(error);
-          toast.error("Unable to retrieve location", { id: 'loc' });
-        }
-      );
-    } else {
-      toast.error("Geolocation is not supported by your browser");
-    }
-  };
-
   const handleFileChange = (e, field) => {
     const file = e.target.files[0];
     if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("File size should be less than 5MB");
+        return;
+      }
       setFormData(prev => ({ ...prev, [field]: file }));
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreviews(prev => ({ ...prev, [field]: reader.result }));
-      };
-      reader.readAsDataURL(file);
+      setPreviews(prev => ({ ...prev, [field]: URL.createObjectURL(file) }));
     }
   };
 
@@ -97,11 +58,71 @@ const SellBook = ({ user }) => {
     setPreviews(prev => ({ ...prev, [field]: null }));
   };
 
+  const handleGetLocation = () => {
+    if (!navigator.geolocation) {
+      toast.error("Geolocation is not supported by your browser");
+      return;
+    }
+
+    toast.loading("Fetching location...", { id: 'loc' });
+    navigator.geolocation.getCurrentPosition(async (position) => {
+      const { latitude, longitude } = position.coords;
+      let address = '';
+
+      // Try to fetch address from OpenStreetMap (Free, no key)
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
+        const data = await res.json();
+        address = data.display_name;
+      } catch (err) {
+        console.error("Geocoding failed", err);
+      }
+
+      setFormData(prev => ({
+        ...prev,
+        address: address || prev.address || `${latitude}, ${longitude}`,
+        location: { latitude, longitude }
+      }));
+      toast.success("Location captured!", { id: 'loc' });
+    }, (error) => {
+      console.error(error);
+      let errorMessage = "Unable to retrieve location";
+      if (error.code === error.PERMISSION_DENIED) {
+        errorMessage = "Location permission denied. Please enable it in your browser settings.";
+      } else if (error.code === error.POSITION_UNAVAILABLE) {
+        errorMessage = "Location information is unavailable.";
+      } else if (error.code === error.TIMEOUT) {
+        errorMessage = "The request to get user location timed out.";
+      }
+      toast.error(errorMessage, { id: 'loc', duration: 5000 });
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!formData.frontImage || !formData.backImage) {
       toast.error("Please upload both front and back images");
+      return;
+    }
+
+    if (!formData.location && !formData.address) {
+      // Allow if address is manually entered, but prefer location for maps
+      // If strict location required:
+      // toast.error("Please click 'Get Location' to add your location");
+      // return;
+    }
+
+    if (!formData.location) {
+      // Should ideally have location for distance filtering
+      // But if they entered address manually, maybe we skip location coords? 
+      // For now, let's warn but proceed if address exists, or enforce location?
+      // The original code enforced: if (!formData.location) return;
+    }
+
+    // Strict check as per original intent
+    if (!formData.location) {
+      toast.error("Please click 'Get Location' to add your location");
       return;
     }
 
@@ -113,6 +134,7 @@ const SellBook = ({ user }) => {
     data.append('price', formData.price);
     data.append('desc', formData.desc);
     data.append('address', formData.address || '');
+    data.append('location', JSON.stringify(formData.location));
     data.append('frontImage', formData.frontImage);
     data.append('backImage', formData.backImage);
 
@@ -349,7 +371,7 @@ const SellBook = ({ user }) => {
         </form>
       </div >
     </div >
-  );
-};
+  )
+}
 
 export default SellBook;

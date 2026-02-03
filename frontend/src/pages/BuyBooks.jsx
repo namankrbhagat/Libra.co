@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, BookOpen, Clock, Tag, User, ArrowRight, RotateCcw } from 'lucide-react';
+import { Search, Filter, BookOpen, Clock, Tag, User, ArrowRight, RotateCcw, MapPin } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import BookLoader from '../components/ui/book-loader';
+import toast from 'react-hot-toast';
 
 const BuyBooks = ({ user }) => {
   const [books, setBooks] = useState([]);
@@ -9,13 +10,36 @@ const BuyBooks = ({ user }) => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [selectedDistance, setSelectedDistance] = useState('All');
+  const [userLocation, setUserLocation] = useState(null);
 
   const categories = ["All", "Engineering", "Medical", "Science", "Arts", "Business", "Novel", "Children", "Commerce", "Fiction", "Non-Fiction", "Others"];
 
   useEffect(() => {
     const fetchBooks = async () => {
+      setLoading(true);
       try {
-        const res = await fetch('/api/book'); // Assuming GET /api/book returns all books
+        let url = '/api/book';
+        const params = new URLSearchParams();
+
+        if (selectedDistance !== 'All') {
+          if (userLocation) {
+            params.append('lat', userLocation.latitude);
+            params.append('long', userLocation.longitude);
+            params.append('distance', selectedDistance);
+          } else {
+            // If selectedDistance is set but userLocation is not,
+            // it means location is being fetched or failed.
+            // For now, we'll just fetch without distance filter.
+            // The handleDistanceChange function will trigger a re-fetch once location is available.
+          }
+        }
+
+        if (params.toString()) {
+          url += `?${params.toString()}`;
+        }
+
+        const res = await fetch(url);
         if (res.ok) {
           const data = await res.json();
           setBooks(data);
@@ -28,8 +52,45 @@ const BuyBooks = ({ user }) => {
       }
     };
 
-    fetchBooks();
-  }, []);
+    // Only fetch if selectedDistance is 'All' (no distance filter)
+    // OR if a distance is selected AND userLocation is available.
+    // This prevents fetching with a distance filter before location is known.
+    if (selectedDistance === 'All' || userLocation) {
+      fetchBooks();
+    }
+  }, [selectedDistance, userLocation]);
+
+  const handleDistanceChange = (e) => {
+    const dist = e.target.value;
+    setSelectedDistance(dist);
+
+    if (dist !== 'All' && !userLocation) {
+      if (navigator.geolocation) {
+        toast.loading("Fetching your location...", { id: 'loc-buy' });
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            setUserLocation({
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude
+            });
+            toast.success("Location fetched!", { id: 'loc-buy' });
+          },
+          (error) => {
+            console.error(error);
+            let errorMessage = "Unable to get location. Distance filter disabled.";
+            if (error.code === error.PERMISSION_DENIED) {
+              errorMessage = "Location permission denied. Please enable it in browser settings to use distance filter.";
+            }
+            toast.error(errorMessage, { id: 'loc-buy', duration: 5000 });
+            setSelectedDistance('All'); // Reset to 'All' if location fails
+          }
+        );
+      } else {
+        toast.error("Geolocation not supported by your browser.", { id: 'loc-buy' });
+        setSelectedDistance('All'); // Reset to 'All' if not supported
+      }
+    }
+  };
 
   useEffect(() => {
     let result = books;
@@ -263,9 +324,28 @@ const BuyBooks = ({ user }) => {
               onChange={(e) => setSelectedCategory(e.target.value)}
               className="w-full h-full bg-white/5 border border-white/10 rounded-xl pl-12 pr-8 py-4 focus:outline-none focus:border-orange-500/50 focus:bg-white/10 transition-all text-white appearance-none cursor-pointer"
             >
-              {categories.map(cat => (
+              <option value="All" className="bg-neutral-900">All Categories</option>
+              {categories.slice(1).map(cat => (
                 <option key={cat} value={cat} className="bg-neutral-900">{cat}</option>
               ))}
+            </select>
+          </div>
+
+          <div className="relative min-w-[200px]">
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/30 pointer-events-none">
+              <MapPin className="w-5 h-5" />
+            </div>
+            <select
+              value={selectedDistance}
+              onChange={handleDistanceChange}
+              className="w-full h-full bg-white/5 border border-white/10 rounded-xl pl-12 pr-8 py-4 focus:outline-none focus:border-orange-500/50 focus:bg-white/10 transition-all text-white appearance-none cursor-pointer"
+            >
+              <option value="All" className="bg-neutral-900">Any Distance</option>
+              <option value="2" className="bg-neutral-900">Within 2 km</option>
+              <option value="5" className="bg-neutral-900">Within 5 km</option>
+              <option value="10" className="bg-neutral-900">Within 10 km</option>
+              <option value="20" className="bg-neutral-900">Within 20 km</option>
+              <option value="50" className="bg-neutral-900">Within 50 km</option>
             </select>
           </div>
         </div>
