@@ -21,6 +21,10 @@ app.use("/api/auth", authRoute);
 app.use("/api/user", userRoute);
 app.use("/api/book", bookRoute);
 
+app.get("/", (req, res) => {
+  res.json({ message: "Backend is running successfully" });
+});
+
 
 
 app.listen(process.env.PORT, () => {
