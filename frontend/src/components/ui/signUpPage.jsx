@@ -35,6 +35,7 @@ const SignUp = ({ setUser }) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ fullName, email, password, phone }),
+        credentials: 'include'
       });
 
       const data = await response.json();

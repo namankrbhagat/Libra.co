@@ -26,7 +26,7 @@ const ProfilePage = ({ user, setUser }) => {
   useEffect(() => {
     const fetchHistory = async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/api/user/history`);
+        const res = await fetch(`${API_BASE_URL}/api/user/history`, { credentials: 'include' });
         if (res.ok) {
           const result = await res.json();
           setData(result);
@@ -44,7 +44,7 @@ const ProfilePage = ({ user, setUser }) => {
 
   const handleLogout = async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/auth/logout`, { method: "POST" });
+      const res = await fetch(`${API_BASE_URL}/api/auth/logout`, { method: "POST", credentials: 'include' });
       const data = await res.json();
       if (res.ok) {
         toast.success("Logged out successfully");
@@ -62,7 +62,7 @@ const ProfilePage = ({ user, setUser }) => {
 
   const handleCancelBooking = async (bookId) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/book/${bookId}/cancel`, { method: 'POST' });
+      const res = await fetch(`${API_BASE_URL}/api/book/${bookId}/cancel`, { method: 'POST', credentials: 'include' });
       if (res.ok) {
         toast.success("Booking cancelled successfully");
         setData(prev => ({
@@ -71,7 +71,7 @@ const ProfilePage = ({ user, setUser }) => {
           buyingHistory: prev.buyingHistory.filter(item => item._id !== bookId)
         }));
 
-        const historyRes = await fetch('/api/user/history');
+        const historyRes = await fetch(`${API_BASE_URL}/api/user/history`, { credentials: 'include' });
         if (historyRes.ok) {
           const result = await historyRes.json();
           setData(result);
@@ -113,7 +113,7 @@ const ProfilePage = ({ user, setUser }) => {
     setOtpLoading(true);
 
     try {
-      const res = await fetch(`${API_BASE_URL}/api/book/${bookId}/otp/send`, { method: 'POST' });
+      const res = await fetch(`${API_BASE_URL}/api/book/${bookId}/otp/send`, { method: 'POST', credentials: 'include' });
       const result = await res.json();
 
       if (res.ok) {
@@ -139,7 +139,8 @@ const ProfilePage = ({ user, setUser }) => {
       const res = await fetch(`${API_BASE_URL}/api/book/${otpModal.bookId}/otp/verify`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ otp: otpInput })
+        body: JSON.stringify({ otp: otpInput }),
+        credentials: 'include'
       });
       const result = await res.json();
 
@@ -148,7 +149,7 @@ const ProfilePage = ({ user, setUser }) => {
         setOtpModal({ open: false, bookId: null, bookTitle: '', mode: 'verify', otpDisplay: null });
 
         setLoading(true);
-        const historyRes = await fetch(`${API_BASE_URL}/api/user/history`);
+        const historyRes = await fetch(`${API_BASE_URL}/api/user/history`, { credentials: 'include' });
         if (historyRes.ok) {
           setData(await historyRes.json());
         }
@@ -177,7 +178,8 @@ const ProfilePage = ({ user, setUser }) => {
           const res = await fetch(`${API_BASE_URL}/api/auth/update-profile`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ avatar: base64Image })
+            body: JSON.stringify({ avatar: base64Image }),
+            credentials: 'include'
           });
           const result = await res.json();
           if (res.ok) {
