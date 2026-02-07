@@ -5,12 +5,15 @@ export const generateToken = async (userId, res) => {
     expiresIn: "7d"
   })
 
+  const isDev = process.env.NODE_ENV === "development";
+  console.log("Generating Token. NODE_ENV:", process.env.NODE_ENV);
+  console.log("Cookie Options - SameSite:", isDev ? "lax" : "none", "Secure:", !isDev);
+
   res.cookie("jwt", token, {
     maxAge: 7 * 24 * 60 * 60 * 1000, //MS
     httpOnly: true, // prevent XSS attacks cross-site scripting attacks
-    sameSite: process.env.NODE_ENV === "development" ? "lax" : "none",
-    secure: process.env.NODE_ENV !== "development" ? true : false,
-
+    sameSite: isDev ? "lax" : "none",
+    secure: !isDev,
   })
 
   return token;

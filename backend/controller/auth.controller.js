@@ -28,8 +28,8 @@ export const signup = async (req, res) => {
     })
 
     if (newUser) {
-      generateToken(newUser._id, res);
       await newUser.save();
+      await generateToken(newUser._id, res);
 
       res.status(201).json({
         _id: newUser._id,
@@ -41,7 +41,7 @@ export const signup = async (req, res) => {
 
       console.log("Signed up successfully...!!");
     } else {
-      res.status(400).json({ message: "Invalid user data" })
+      return res.status(400).json({ message: "Invalid user data" })
     }
   } catch (error) {
     console.log(`Error in signup controller: ${error.message}`);
@@ -54,14 +54,14 @@ export const login = async (req, res) => {
   try {
     const user = await User.findOne({ email });
 
-    if (!user) res.status(400).json({ message: "Invalid Credentials" })
+    if (!user) return res.status(400).json({ message: "Invalid Credentials" })
 
     const isPasswordCorrect = await bcrypt.compare(password, user.password);
     if (!isPasswordCorrect) {
-      return res.status(400).json({ message: "Invalid credentials" });
+      return res.status(400).json({ message: "Invalid Credentials" });
     }
 
-    generateToken(user._id, res);
+    await generateToken(user._id, res);
     res.status(200).json({
       _id: user._id,
       fullName: user.fullName,
