@@ -44,19 +44,18 @@ export const getUserHistory = async (req, res) => {
 
     const enrichedBuyingHistory = buyingHistory.map(booking => {
       const book = booking.book;
-      return {
-        _id: book ? book._id : booking._id, // Use book ID for cancelling or booking ID? Profile uses _id to call cancelBook endpoint, which expects bookId.
-        // Wait, the cancelBook API expects bookId: router.post("/:id/cancel"...)
-        // So we should return the book._id as _id
-        // But what if book is null?
+      if (!book) return null; // Skip if book is deleted
 
-        _id: book ? book._id : null,
-        title: book ? book.title : "Unknown Title",
-        seller: book && book.seller ? book.seller.fullName : "Unknown Seller",
-        location: book && book.seller && book.seller.address ? book.seller.address : "Location Not Available",
-        status: booking.status
+      return {
+        _id: book._id,
+        title: book.title,
+        status: booking.status,
+        price: `₹${book.price}`,
+        date: booking.createdAt.toISOString().split('T')[0],
+        seller: book.seller?.fullName || "Unknown Seller",
+        location: book.seller?.address || "Location Not Available"
       };
-    });
+    }).filter(item => item !== null); // Filter out nulls
 
     // To improve Buying History, we should populate seller from the book
     // Wait, deep populate? 'book' is populated. 'book.seller' is an ID.
