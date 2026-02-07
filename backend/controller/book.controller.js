@@ -178,46 +178,47 @@ export const cancelBook = async (req, res) => {
 export const sendSaleOTP = async (req, res) => {
   try {
     const bookId = req.params.id;
-    const sellerId = req.user._id;
+    const userId = req.user._id;
 
-    const book = await Books.findById(bookId).populate('buyer');
+    const book = await Books.findById(bookId);
     if (!book) return res.status(404).json({ message: "Book not found" });
 
-    if (book.seller.toString() !== sellerId.toString()) {
-      return res.status(403).json({ message: "You are not the seller of this book" });
+    // Permissions: Allow Seller ONLY
+    const isSeller = book.seller.toString() === userId.toString();
+
+    if (!isSeller) {
+      return res.status(403).json({ message: "Only the seller can generate OTP" });
     }
 
     if (book.status !== "Booked" || !book.buyer) {
       return res.status(400).json({ message: "Book is not currently booked" });
     }
 
-    const buyer = book.buyer;
-    if (!buyer.phone) {
-      return res.status(400).json({ message: "Buyer does not have a phone number linked" });
-    }
-
     // Generate 6-digit OTP
     const otpValue = Math.floor(100000 + Math.random() * 900000).toString();
-    console.log("-----------------------------------------");
-    console.log(`[DEBUG] Generated OTP for Buyer ${buyer._id}: ${otpValue}`);
-    console.log("-----------------------------------------");
+    console.log(`[DEBUG] Generated OTP for Book ${bookId}: ${otpValue}`);
 
-    // Save to DB (upsert if exists for this book/user combo to avoid duplicates)
-    await OTP.findOneAndDelete({ bookId, userId: buyer._id }); // Clear old OTPs
+    // Save to DB (upsert)
+    await OTP.findOneAndDelete({ bookId, userId: book.buyer });
     const newOTP = new OTP({
-      userId: buyer._id,
+      userId: book.buyer,
       bookId: bookId,
       otp: otpValue
     });
     await newOTP.save();
 
-    // Send SMS
-    try {
-      await sendOtpSMS(buyer.phone, otpValue);
-      res.status(200).json({ message: "OTP sent to buyer's phone" });
-    } catch (smsError) {
-      console.error("SMS sending failed:", smsError);
-      res.status(500).json({ message: "Failed to send SMS", error: smsError.message });
+    // Send SMS to Buyer
+    const buyerUser = await User.findById(book.buyer);
+    if (buyerUser && buyerUser.phone) {
+      try {
+        await sendOtpSMS(buyerUser.phone, otpValue);
+        return res.status(200).json({ message: "OTP sent to buyer's phone" });
+      } catch (smsError) {
+        console.error(smsError);
+        return res.status(500).json({ message: "Failed to send SMS" });
+      }
+    } else {
+      return res.status(400).json({ message: "Buyer has no phone number" });
     }
 
   } catch (error) {
@@ -225,6 +226,8 @@ export const sendSaleOTP = async (req, res) => {
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
+
+
 
 export const verifySaleOTP = async (req, res) => {
   try {

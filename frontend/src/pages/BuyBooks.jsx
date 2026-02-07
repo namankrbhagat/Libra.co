@@ -3,6 +3,7 @@ import { Search, Filter, BookOpen, Clock, Tag, User, ArrowRight, RotateCcw, MapP
 import { Link } from 'react-router-dom';
 import BookLoader from '../components/ui/book-loader';
 import toast from 'react-hot-toast';
+import { API_BASE_URL } from '../config';
 
 const BuyBooks = ({ user }) => {
   const [books, setBooks] = useState([]);
@@ -19,7 +20,7 @@ const BuyBooks = ({ user }) => {
     const fetchBooks = async () => {
       setLoading(true);
       try {
-        let url = '/api/book';
+        let url = `${API_BASE_URL}/api/book`;
         const params = new URLSearchParams();
 
         if (selectedDistance !== 'All') {
@@ -123,7 +124,7 @@ const BuyBooks = ({ user }) => {
     const handleBookClick = async () => {
       setLoadingAction(true);
       try {
-        const res = await fetch(`/api/book/${book._id}/book`, { method: 'POST' });
+        const res = await fetch(`${API_BASE_URL}/api/book/${book._id}/book`, { method: 'POST' });
         const data = await res.json();
         if (res.ok) {
           setBookingStatus('booked');
@@ -140,7 +141,7 @@ const BuyBooks = ({ user }) => {
     const handleCancelClick = async () => {
       setLoadingAction(true);
       try {
-        const res = await fetch(`/api/book/${book._id}/cancel`, { method: 'POST' });
+        const res = await fetch(`${API_BASE_URL}/api/book/${book._id}/cancel`, { method: 'POST' });
         const data = await res.json();
         if (res.ok) {
           setBookingStatus('idle');
@@ -262,12 +263,23 @@ const BuyBooks = ({ user }) => {
                     </p>
                   </div>
                 </div>
-                <button className="px-3 py-1.5 border border-white/20 rounded-lg text-xs text-white hover:bg-white/10 transition-colors">
-                  Track
-                </button>
-                <button className="px-4 py-1.5 bg-orange-500 text-white text-xs font-bold rounded-lg hover:bg-orange-600 transition-colors shadow-lg shadow-orange-500/20">
-                  Buy
-                </button>
+                <div className="relative group/track">
+                  <button className="px-3 py-1.5 border border-white/20 rounded-lg text-xs text-white hover:bg-white/10 transition-colors">
+                    Track
+                  </button>
+                  <div className="absolute bottom-full mb-2 right-0 w-max bg-neutral-900 border border-white/10 px-3 py-2 rounded-lg text-xs text-white/80 opacity-0 invisible group-hover/track:opacity-100 group-hover/track:visible transition-all z-50 shadow-xl backdrop-blur-xl translate-y-2 group-hover/track:translate-y-0 pointer-events-none whitespace-nowrap">
+                    Map feature will be available soon
+                  </div>
+                </div>
+
+                <div className="relative group/buy">
+                  <button className="px-4 py-1.5 bg-orange-500 text-white text-xs font-bold rounded-lg hover:bg-orange-600 transition-colors shadow-lg shadow-orange-500/20">
+                    Buy
+                  </button>
+                  <div className="absolute bottom-full mb-2 right-0 w-max bg-neutral-900 border border-white/10 px-3 py-2 rounded-lg text-xs text-white/80 opacity-0 invisible group-hover/buy:opacity-100 group-hover/buy:visible transition-all z-50 shadow-xl backdrop-blur-xl translate-y-2 group-hover/buy:translate-y-0 pointer-events-none whitespace-nowrap">
+                    Payment integration will be done soon
+                  </div>
+                </div>
               </div>
             )}
           </div>

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Mail, Phone, MapPin, Package, Clock, CheckCircle, XCircle, ShoppingBag, LogOut, ArrowLeft, ShieldCheck, Loader2, Camera } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { API_BASE_URL } from '../config';
 
 const ProfilePage = ({ user, setUser }) => {
   const navigate = useNavigate();
@@ -14,7 +15,7 @@ const ProfilePage = ({ user, setUser }) => {
   });
 
   // OTP Modal State
-  const [otpModal, setOtpModal] = useState({ open: false, bookId: null, bookTitle: '' });
+  const [otpModal, setOtpModal] = useState({ open: false, bookId: null, bookTitle: '', mode: 'verify', otpDisplay: null });
   const [otpInput, setOtpInput] = useState('');
   const [otpLoading, setOtpLoading] = useState(false);
   const [verifying, setVerifying] = useState(false);
@@ -25,7 +26,7 @@ const ProfilePage = ({ user, setUser }) => {
   useEffect(() => {
     const fetchHistory = async () => {
       try {
-        const res = await fetch('/api/user/history');
+        const res = await fetch(`${API_BASE_URL}/api/user/history`);
         if (res.ok) {
           const result = await res.json();
           setData(result);
@@ -43,7 +44,7 @@ const ProfilePage = ({ user, setUser }) => {
 
   const handleLogout = async () => {
     try {
-      const res = await fetch('/api/auth/logout', { method: "POST" });
+      const res = await fetch(`${API_BASE_URL}/api/auth/logout`, { method: "POST" });
       const data = await res.json();
       if (res.ok) {
         toast.success("Logged out successfully");
@@ -61,7 +62,7 @@ const ProfilePage = ({ user, setUser }) => {
 
   const handleCancelBooking = async (bookId) => {
     try {
-      const res = await fetch(`/api/book/${bookId}/cancel`, { method: 'POST' });
+      const res = await fetch(`${API_BASE_URL}/api/book/${bookId}/cancel`, { method: 'POST' });
       if (res.ok) {
         toast.success("Booking cancelled successfully");
         setData(prev => ({
@@ -84,24 +85,48 @@ const ProfilePage = ({ user, setUser }) => {
     }
   };
 
-  const initVerification = async (book) => {
-    setOtpModal({ open: true, bookId: book._id, bookTitle: book.title });
-    setOtpLoading(true);
+  const handleOpenVerify = (book) => {
+    setOtpModal({ open: true, bookId: book._id, bookTitle: book.title, mode: 'verify', otpDisplay: null });
     setOtpInput('');
+  };
+
+  const handleOpenGenerate = (book) => {
+    setOtpModal({ open: true, bookId: book._id, bookTitle: book.title, mode: 'generate', otpDisplay: null });
+  };
+
+  /* 
+   * SELLER generates OTP -> Sends via SMS to Buyer -> Opens Verify Modal
+   */
+  /* 
+   * STEP 1: Open Confirmation Modal
+   */
+  const handleOpenOTPConfirm = (book) => {
+    setOtpModal({ open: true, bookId: book._id, bookTitle: book.title, mode: 'confirm', otpDisplay: null });
+  };
+
+  /* 
+   * STEP 2: Actually Generate & Send OTP -> Switch to Verify Mode
+   */
+  const sendOTPAndSwitchToVerify = async () => {
+    // Use the bookId from state, as this is called from within the modal
+    const bookId = otpModal.bookId;
+    setOtpLoading(true);
 
     try {
-      const res = await fetch(`/api/book/${book._id}/otp/send`, { method: 'POST' });
+      const res = await fetch(`${API_BASE_URL}/api/book/${bookId}/otp/send`, { method: 'POST' });
       const result = await res.json();
+
       if (res.ok) {
-        toast.success("OTP sent to buyer's phone");
+        toast.success("OTP sent to buyer's phone!");
+        setOtpModal(prev => ({ ...prev, mode: 'verify' }));
       } else {
         toast.error(result.message || "Failed to send OTP");
-        setOtpModal({ open: false, bookId: null, bookTitle: '' });
+        // Keep modal open but maybe stay in confirm mode or close? 
+        // Let's stay in confirm so they can retry or cancel.
       }
     } catch (error) {
-      console.error(error);
+      console.error("Error sending OTP:", error);
       toast.error("Error sending OTP");
-      setOtpModal({ open: false, bookId: null, bookTitle: '' });
     } finally {
       setOtpLoading(false);
     }
@@ -111,7 +136,7 @@ const ProfilePage = ({ user, setUser }) => {
     if (!otpInput) return toast.error("Please enter OTP");
     setVerifying(true);
     try {
-      const res = await fetch(`/api/book/${otpModal.bookId}/otp/verify`, {
+      const res = await fetch(`${API_BASE_URL}/api/book/${otpModal.bookId}/otp/verify`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ otp: otpInput })
@@ -120,10 +145,10 @@ const ProfilePage = ({ user, setUser }) => {
 
       if (res.ok) {
         toast.success("Sale completed! Book marked as Sold.");
-        setOtpModal({ open: false, bookId: null, bookTitle: '' });
+        setOtpModal({ open: false, bookId: null, bookTitle: '', mode: 'verify', otpDisplay: null });
 
         setLoading(true);
-        const historyRes = await fetch('/api/user/history');
+        const historyRes = await fetch(`${API_BASE_URL}/api/user/history`);
         if (historyRes.ok) {
           setData(await historyRes.json());
         }
@@ -149,7 +174,7 @@ const ProfilePage = ({ user, setUser }) => {
 
         // Upload to backend
         try {
-          const res = await fetch('/api/auth/update-profile', {
+          const res = await fetch(`${API_BASE_URL}/api/auth/update-profile`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ avatar: base64Image })
@@ -313,11 +338,10 @@ const ProfilePage = ({ user, setUser }) => {
                         <StatusBadge status={item.status} />
                         {(item.status === 'Booked') && (
                           <button
-                            onClick={() => initVerification(item)}
-                            className="bg-green-500/10 text-green-500 p-1.5 rounded hover:bg-green-500/20 transition-colors border border-green-500/20"
-                            title="Complete Sale"
+                            onClick={() => handleOpenOTPConfirm(item)}
+                            className="bg-orange-500/10 text-orange-500 px-3 py-1.5 rounded text-xs hover:bg-orange-500/20 transition-colors border border-orange-500/20 whitespace-nowrap"
                           >
-                            <ShieldCheck className="w-4 h-4" />
+                            Generate OTP
                           </button>
                         )}
                       </div>
@@ -390,48 +414,64 @@ const ProfilePage = ({ user, setUser }) => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
           <div className="bg-neutral-900 border border-white/10 rounded-2xl p-6 w-full max-w-md shadow-xl relative animate-in fade-in zoom-in duration-200">
             <button
-              onClick={() => setOtpModal({ open: false, bookId: null, bookTitle: '' })}
+              onClick={() => setOtpModal({ open: false, bookId: null, bookTitle: '', mode: 'verify', otpDisplay: null })}
               className="absolute top-4 right-4 text-white/40 hover:text-white"
             >
               <XCircle className="w-5 h-5" />
             </button>
 
-            <h3 className="text-xl font-instrument-serif text-white mb-2">Complete Sale</h3>
-            <p className="text-white/60 text-sm mb-6">
-              Ask the buyer for the OTP sent to their phone to verify the handover of
-              <span className="text-orange-500 font-medium ml-1">{otpModal.bookTitle}</span>.
-            </p>
-
-            {otpLoading ? (
-              <div className="flex flex-col items-center py-8">
-                <Loader2 className="w-8 h-8 text-orange-500 animate-spin mb-3" />
-                <span className="text-sm text-white/40">Sending OTP...</span>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div>
-                  <input
-                    type="text"
-                    placeholder="Enter 6-digit OTP"
-                    value={otpInput}
-                    onChange={(e) => setOtpInput(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-center text-2xl tracking-widest focus:outline-none focus:border-orange-500/50 transition-all placeholder:text-white/10"
-                  />
-                </div>
+            {otpModal.mode === 'confirm' ? (
+              /* MODE: CONFIRMATION */
+              <>
+                <h3 className="text-xl font-instrument-serif text-white mb-2">Initiate Sale</h3>
+                <p className="text-white/60 text-sm mb-6">
+                  Verify the buyer is present. Clicking below will generate an OTP and send it to the buyer's phone.
+                  The book will be marked as <span className="text-orange-500">Sold</span> only after you enter the correct OTP provided by the buyer.
+                </p>
 
                 <button
-                  onClick={verifyOTP}
-                  disabled={verifying || otpInput.length !== 6}
-                  className="w-full py-3 bg-white text-black font-medium rounded-xl hover:bg-neutral-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  onClick={sendOTPAndSwitchToVerify}
+                  disabled={otpLoading}
+                  className="w-full py-3 bg-orange-500 text-white font-medium rounded-xl hover:bg-orange-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                 >
-                  {verifying && <Loader2 className="w-4 h-4 animate-spin" />}
-                  Verify & Complete
+                  {otpLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
+                  Generate OTP & Verify
                 </button>
-
-                <p className="text-xs text-center text-white/30">
-                  Not confirmed? <button onClick={() => initVerification({ _id: otpModal.bookId, title: otpModal.bookTitle })} className="text-orange-500 hover:underline">Resend OTP</button>
+              </>
+            ) : (
+              /* MODE: VERIFY INPUT */
+              <>
+                <h3 className="text-xl font-instrument-serif text-white mb-2">Complete Sale</h3>
+                <p className="text-white/60 text-sm mb-6">
+                  OTP sent to Buyer. Ask them for the code and enter it below to complete the sale of
+                  <span className="text-orange-500 font-medium ml-1">{otpModal.bookTitle}</span>.
                 </p>
-              </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <input
+                      type="text"
+                      placeholder="Enter 6-digit OTP"
+                      value={otpInput}
+                      onChange={(e) => setOtpInput(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-center text-2xl tracking-widest focus:outline-none focus:border-orange-500/50 transition-all placeholder:text-white/10"
+                    />
+                  </div>
+
+                  <button
+                    onClick={verifyOTP}
+                    disabled={verifying || otpInput.length !== 6}
+                    className="w-full py-3 bg-white text-black font-medium rounded-xl hover:bg-neutral-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {verifying && <Loader2 className="w-4 h-4 animate-spin" />}
+                    Verify & Complete
+                  </button>
+
+                  <p className="text-xs text-center text-white/30">
+                    Didn't arrive? <button onClick={sendOTPAndSwitchToVerify} className="text-orange-500 hover:underline">Resend OTP</button>
+                  </p>
+                </div>
+              </>
             )}
           </div>
         </div>

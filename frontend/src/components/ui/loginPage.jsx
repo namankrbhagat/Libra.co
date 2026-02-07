@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import { API_BASE_URL } from "../../config";
 
 const SignIn1 = ({ setUser }) => {
   const [email, setEmail] = useState("");
@@ -26,7 +27,7 @@ const SignIn1 = ({ setUser }) => {
 
     setLoading(true);
     try {
-      const response = await fetch('/api/auth/login', {
+      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

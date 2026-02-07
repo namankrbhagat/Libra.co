@@ -25,7 +25,7 @@ const ResponsiveHeroBanner = ({
   primaryButtonHref = "#",
   secondaryButtonText = "Watch Launch",
   secondaryButtonHref = "#",
-  partnersTitle = "Partnering with leading space agencies worldwide",
+  partnersTitle = "Trusted by students from",
   partners = [
     { logoUrl: "https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/f7466370-2832-4fdd-84c2-0932bb0dd850_800w.png", href: "#" },
     { logoUrl: "https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/0a9a71ec-268b-4689-a510-56f57e9d4f13_1600w.png", href: "#" },
@@ -177,23 +177,14 @@ const ResponsiveHeroBanner = ({
             <p className="animate-fade-slide-in-1 text-xs text-white/50 text-center font-sans tracking-widest uppercase">
               {partnersTitle}
             </p>
-            <div className="flex flex-wrap justify-center gap-8 md:gap-16 animate-fade-slide-in-2 mt-8 items-center">
-              {partners.map((partner, index) => (
-                <a
+            <div className="flex flex-wrap justify-center gap-16 md:gap-24 animate-fade-slide-in-2 mt-12 items-center">
+              {["IITs", "NITs", "UPSC", "CBSE", "ICSE"].map((name, index) => (
+                <span
                   key={index}
-                  href={partner.href}
-                  title={partner.name || ""}
-                  className="group relative h-12 w-auto min-w-[100px] flex items-center justify-center transition-all duration-300 hover:scale-105"
+                  className="text-3xl md:text-4xl font-instrument-serif text-white/70 hover:text-white transition-colors cursor-default select-none tracking-wider"
                 >
-                  {/* Glass-like backing for logo visibility */}
-                  <div className="absolute -inset-4 rounded-xl bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity blur-md" />
-
-                  <img
-                    src={partner.logoUrl}
-                    alt="Partner Logo"
-                    className="h-full w-auto object-contain opacity-70 group-hover:opacity-100 invert grayscale brightness-125 transition-all"
-                  />
-                </a>
+                  {name}
+                </span>
               ))}
             </div>
           </div>

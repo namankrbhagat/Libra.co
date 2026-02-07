@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Upload, X, Loader2, DollarSign, BookOpen, Tag, FileText, Image as ImageIcon, MapPin } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { API_BASE_URL } from '../config';
 
 const InputGroup = ({ label, icon: Icon, required, children }) => (
   <div className="space-y-2">
@@ -139,7 +140,7 @@ const SellBook = ({ user }) => {
     data.append('backImage', formData.backImage);
 
     try {
-      const res = await fetch('/api/book/add', {
+      const res = await fetch(`${API_BASE_URL}/api/book/add`, {
         method: 'POST',
         body: data,
         // Note: Do NOT set Content-Type header manually when using FormData
