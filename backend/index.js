@@ -10,6 +10,7 @@ import cookieParser from 'cookie-parser';
 configDotenv();
 
 const app = express();
+app.set('trust proxy', 1); // Required for secure cookies on Render/Vercel
 
 // 1. Define base allowed origins
 const allowedOrigins = [
