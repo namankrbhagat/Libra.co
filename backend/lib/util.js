@@ -14,6 +14,7 @@ export const generateToken = async (userId, res) => {
     httpOnly: true, // prevent XSS attacks cross-site scripting attacks
     sameSite: isDev ? "lax" : "none",
     secure: !isDev,
+    partitioned: true // Support for CHIPS (modern browsers)
   })
 
   return token;
