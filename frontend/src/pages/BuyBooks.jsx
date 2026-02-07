@@ -40,7 +40,7 @@ const BuyBooks = ({ user }) => {
           url += `?${params.toString()}`;
         }
 
-        const res = await fetch(url);
+        const res = await fetch(url, { credentials: 'include' });
         if (res.ok) {
           const data = await res.json();
           setBooks(data);
@@ -124,7 +124,7 @@ const BuyBooks = ({ user }) => {
     const handleBookClick = async () => {
       setLoadingAction(true);
       try {
-        const res = await fetch(`${API_BASE_URL}/api/book/${book._id}/book`, { method: 'POST' });
+        const res = await fetch(`${API_BASE_URL}/api/book/${book._id}/book`, { method: 'POST', credentials: 'include' });
         const data = await res.json();
         if (res.ok) {
           setBookingStatus('booked');
@@ -141,7 +141,7 @@ const BuyBooks = ({ user }) => {
     const handleCancelClick = async () => {
       setLoadingAction(true);
       try {
-        const res = await fetch(`${API_BASE_URL}/api/book/${book._id}/cancel`, { method: 'POST' });
+        const res = await fetch(`${API_BASE_URL}/api/book/${book._id}/cancel`, { method: 'POST', credentials: 'include' });
         const data = await res.json();
         if (res.ok) {
           setBookingStatus('idle');
