@@ -168,6 +168,10 @@ const ProfilePage = ({ user, setUser }) => {
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        toast.error("Image size should be less than 5MB");
+        return;
+      }
       const reader = new FileReader();
       reader.onloadend = async () => {
         const base64Image = reader.result;
