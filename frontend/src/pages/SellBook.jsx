@@ -143,7 +143,7 @@ const SellBook = ({ user }) => {
       const res = await fetch(`${API_BASE_URL}/api/book/add`, {
         method: 'POST',
         body: data,
-        // Note: Do NOT set Content-Type header manually when using FormData
+        credentials: 'include' // Important for sending cookies with FormData
       });
 
       const result = await res.json();
