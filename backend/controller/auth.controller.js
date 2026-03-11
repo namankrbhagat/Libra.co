@@ -44,7 +44,12 @@ export const signup = async (req, res) => {
       return res.status(400).json({ message: "Invalid user data" })
     }
   } catch (error) {
+    if (error.code === 11000) {
+      const dupField = Object.keys(error.keyValue)[0];
+      return res.status(400).json({ message: `${dupField} already exists` });
+    }
     console.log(`Error in signup controller: ${error.message}`);
+    res.status(500).json({ message: "Internal Server Error" });
   }
 }
 
