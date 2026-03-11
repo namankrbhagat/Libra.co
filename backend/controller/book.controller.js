@@ -2,7 +2,7 @@ import Books from "../models/book.js";
 import cloudinary from "../lib/cloudinary.js";
 import User from "../models/user.js";
 import OTP from "../models/otp.js";
-import { sendOtpSMS } from "../lib/otp.js";
+import { sendOtpEmail } from "../lib/otp.js";
 
 import Booking from "../models/booking.js";
 
@@ -207,18 +207,18 @@ export const sendSaleOTP = async (req, res) => {
     });
     await newOTP.save();
 
-    // Send SMS to Buyer
+    // Send Email to Buyer
     const buyerUser = await User.findById(book.buyer);
-    if (buyerUser && buyerUser.phone) {
+    if (buyerUser && buyerUser.email) {
       try {
-        await sendOtpSMS(buyerUser.phone, otpValue);
-        return res.status(200).json({ message: "OTP sent to buyer's phone" });
-      } catch (smsError) {
-        console.error(smsError);
-        return res.status(500).json({ message: "Failed to send SMS" });
+        await sendOtpEmail(buyerUser.email, otpValue);
+        return res.status(200).json({ message: "OTP sent to buyer's email" });
+      } catch (emailError) {
+        console.error(emailError);
+        return res.status(500).json({ message: "Failed to send Email" });
       }
     } else {
-      return res.status(400).json({ message: "Buyer has no phone number" });
+      return res.status(400).json({ message: "Buyer has no email address" });
     }
 
   } catch (error) {

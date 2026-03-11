@@ -1,35 +1,44 @@
-import twilio from 'twilio';
+import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
 dotenv.config();
 
-if (!process.env.TWILIO_ACCOUNT_SID || !process.env.TWILIO_AUTH_TOKEN) {
-  console.error("CRITICAL: TWILIO_ACCOUNT_SID or TWILIO_AUTH_TOKEN is missing from environment variables.");
+if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+  console.error("CRITICAL: EMAIL_USER or EMAIL_PASS is missing from environment variables.");
 }
 
-const client = twilio(
-  process.env.TWILIO_ACCOUNT_SID,
-  process.env.TWILIO_AUTH_TOKEN
-);
+const transporter = nodemailer.createTransport({
+  service: 'gmail', // Using gmail as default, requires App Password
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+});
 
-export const sendOtpSMS = async (phone, otp) => {
+export const sendOtpEmail = async (email, otp) => {
   try {
-    console.log("[DEBUG] Sending SMS from:", process.env.TWILIO_PHONE_NUMBER);
+    console.log("[DEBUG] Sending OTP Email to:", email);
 
-    // E.164 format check
-    let formattedPhone = phone;
-    if (!phone.startsWith('+')) {
-      formattedPhone = `+91${phone}`;
-    }
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: 'Libra.co - Your OTP for Book Sale',
+      text: `Your OTP for completing the book sale on Libra.co is ${otp}. It is valid for 5 minutes.`,
+      html: `
+        <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; border: 1px solid #eee; border-radius: 8px;">
+          <h2 style="color: #f97316; margin-bottom: 20px;">Libra.co OTP Verification</h2>
+          <p>Your OTP to verify the handover of the book is:</p>
+          <h1 style="letter-spacing: 5px; color: #3b82f6; font-size: 32px; background: #f0f9ff; padding: 10px; display: inline-block; border-radius: 4px;">${otp}</h1>
+          <p style="margin-top: 20px;">This OTP is valid for 5 minutes.</p>
+          <p style="color: #666; font-size: 12px; margin-top: 30px;">If you did not request this, please ignore this email.</p>
+        </div>
+      `
+    };
 
-    const message = await client.messages.create({
-      body: `Your OTP for Libra.co is ${otp}. It is valid for 5 minutes.`,
-      from: process.env.TWILIO_PHONE_NUMBER,
-      to: formattedPhone
-    });
-
-    return message;
+    const info = await transporter.sendMail(mailOptions);
+    console.log("[DEBUG] Email sent: " + info.response);
+    return info;
   } catch (error) {
-    console.error("Twilio SMS Error:", error);
+    console.error("Nodemailer Error:", error);
     throw error;
   }
 };

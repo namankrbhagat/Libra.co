@@ -117,7 +117,7 @@ const ProfilePage = ({ user, setUser }) => {
       const result = await res.json();
 
       if (res.ok) {
-        toast.success("OTP sent to buyer's phone!");
+        toast.success("OTP sent to buyer's email!");
         setOtpModal(prev => ({ ...prev, mode: 'verify' }));
       } else {
         toast.error(result.message || "Failed to send OTP");

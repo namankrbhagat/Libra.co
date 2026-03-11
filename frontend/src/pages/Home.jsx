@@ -10,7 +10,7 @@ const Home = ({ user }) => {
       <Hero user={user} />
       {/* Add margins or keep existing layout logic */}
       <FeaturesSectionWithBentoGrid />
-      <Testimonials />
+      {/* <Testimonials /> */}
       <Footer />
     </>
   );
