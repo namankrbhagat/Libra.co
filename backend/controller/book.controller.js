@@ -1,10 +1,9 @@
 import Books from "../models/book.js";
 import cloudinary from "../lib/cloudinary.js";
 import User from "../models/user.js";
-import OTP from "../models/otp.js";
 import { sendOtpEmail } from "../lib/otp.js";
-
 import Booking from "../models/booking.js";
+import { setRedisKey, getRedisKey, deleteRedisKey } from "../lib/redis.js";
 
 // ... (Existing imports)
 
@@ -198,14 +197,9 @@ export const sendSaleOTP = async (req, res) => {
     const otpValue = Math.floor(100000 + Math.random() * 900000).toString();
     console.log(`[DEBUG] Generated OTP for Book ${bookId}: ${otpValue}`);
 
-    // Save to DB (upsert)
-    await OTP.findOneAndDelete({ bookId, userId: book.buyer });
-    const newOTP = new OTP({
-      userId: book.buyer,
-      bookId: bookId,
-      otp: otpValue
-    });
-    await newOTP.save();
+    // Store OTP exclusively in Redis with 5-minute (300s) TTL
+    const redisKey = `otp:${bookId}:${book.buyer}`;
+    await setRedisKey(redisKey, otpValue, 300);
 
     // Send Email to Buyer
     const buyerUser = await User.findById(book.buyer);
@@ -248,14 +242,12 @@ export const verifySaleOTP = async (req, res) => {
       return res.status(400).json({ message: "Book is not booked properly" });
     }
 
-    // Find OTP
-    const otpRecord = await OTP.findOne({
-      bookId: bookId,
-      userId: book.buyer,
-      otp: otp
-    });
+    const redisKey = `otp:${bookId}:${book.buyer}`;
+    
+    // Retrieve OTP exclusively from Redis
+    const cachedOtp = await getRedisKey(redisKey);
 
-    if (!otpRecord) {
+    if (!cachedOtp || String(cachedOtp).trim() !== String(otp).trim()) {
       return res.status(400).json({ message: "Invalid or expired OTP" });
     }
 
@@ -263,22 +255,13 @@ export const verifySaleOTP = async (req, res) => {
     book.status = "Sold";
     await book.save();
 
-    // Update Booking status
-    // Find the booking for this book and buyer
-    // Note: Creating a 'Sold' status in Booking model might be needed if it restricts enums, 
-    // but assuming standard string or matching enums.
-
-    // Check if Booking model import is available nearby or import it
-    // Actually, I need to make sure Booking is imported if I use it.
-    // It is imported at the top of file: import Booking from "../models/booking.js";
-
     await Booking.findOneAndUpdate(
       { book: bookId, bookings: book.buyer },
       { status: "Sold" }
     );
 
-    // Delete used OTP
-    await OTP.deleteOne({ _id: otpRecord._id });
+    // Immediately delete OTP from Redis upon successful verification
+    await deleteRedisKey(redisKey);
 
     res.status(200).json({ message: "Sale completed successfully!", book });
 

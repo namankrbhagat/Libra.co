@@ -2,6 +2,7 @@ import express from "express";
 import multer from "multer";
 import { protectRoute } from "../middleware/auth.middleware.js";
 import { createBook, getAllBooks, bookBook, cancelBook, sendSaleOTP, verifySaleOTP } from "../controller/book.controller.js";
+import { otpSendRateLimiter } from "../middleware/rateLimiter.middleware.js";
 
 const router = express.Router();
 
@@ -19,7 +20,7 @@ router.post("/:id/book", protectRoute, bookBook);
 router.post("/:id/cancel", protectRoute, cancelBook);
 
 // OTP Routes
-router.post("/:id/otp/send", protectRoute, sendSaleOTP);
+router.post("/:id/otp/send", protectRoute, otpSendRateLimiter, sendSaleOTP);
 router.post("/:id/otp/verify", protectRoute, verifySaleOTP);
 
 // Route to add a new book
