@@ -24,11 +24,11 @@ export const createRateLimiter = ({
       if (keyGenerator) {
         identifier = keyGenerator(req);
       } else if (req.user && (req.user.email || req.user._id)) {
-        identifier = req.user.email ? req.user.email.toLowerCase().trim() : req.user._id.toString();
-      } else if (req.body && req.body.email) {
+        identifier = req.user.email ? String(req.user.email).toLowerCase().trim() : String(req.user._id);
+      } else if (req.body && req.body.email && typeof req.body.email === 'string') {
         identifier = req.body.email.toLowerCase().trim();
       } else {
-        const forwarded = req.headers['x-forwarded-for'];
+        const forwarded = req.headers ? req.headers['x-forwarded-for'] : null;
         const clientIp = typeof forwarded === 'string' ? forwarded.split(',')[0].trim() : req.ip;
         identifier = clientIp || req.socket?.remoteAddress || 'unknown';
       }
@@ -100,9 +100,9 @@ export const otpSendRateLimiter = createRateLimiter({
   message: 'Maximum OTP request limit reached (5 per hour). Please try again later.',
   keyGenerator: (req) => {
     if (req.user) {
-      return req.user.email ? req.user.email.toLowerCase().trim() : req.user._id.toString();
+      return req.user.email ? String(req.user.email).toLowerCase().trim() : String(req.user._id);
     }
-    const forwarded = req.headers['x-forwarded-for'];
+    const forwarded = req.headers ? req.headers['x-forwarded-for'] : null;
     const clientIp = typeof forwarded === 'string' ? forwarded.split(',')[0].trim() : req.ip;
     return clientIp || 'unknown';
   }

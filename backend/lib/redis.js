@@ -3,37 +3,41 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+const redisUrl = process.env.REDIS_URL;
 
 let redisClient = null;
 
-try {
-  redisClient = new Redis(redisUrl, {
-    maxRetriesPerRequest: 1, // Fail fast on commands when disconnected so fallback logic triggers
-    retryStrategy(times) {
-      // Exponential backoff up to 2 seconds
-      return Math.min(times * 100, 2000);
-    },
-    enableOfflineQueue: false // Prevents command queueing while offline
-  });
+if (redisUrl) {
+  try {
+    redisClient = new Redis(redisUrl, {
+      maxRetriesPerRequest: 1, // Fail fast on commands when disconnected so fallback logic triggers
+      retryStrategy(times) {
+        // Exponential backoff up to 2 seconds
+        return Math.min(times * 100, 2000);
+      },
+      enableOfflineQueue: false // Prevents command queueing while offline
+    });
 
-  redisClient.on('connect', () => {
-    console.log('[Redis] Connected to Redis server.');
-  });
+    redisClient.on('connect', () => {
+      console.log('[Redis] Connected to Redis server.');
+    });
 
-  redisClient.on('ready', () => {
-    console.log('[Redis] Client ready to process commands.');
-  });
+    redisClient.on('ready', () => {
+      console.log('[Redis] Client ready to process commands.');
+    });
 
-  redisClient.on('error', (err) => {
-    console.warn('[Redis Warning] Connection issue:', err.message);
-  });
+    redisClient.on('error', (err) => {
+      console.warn('[Redis Warning] Connection issue:', err.message);
+    });
 
-  redisClient.on('end', () => {
-    console.warn('[Redis] Connection closed.');
-  });
-} catch (error) {
-  console.warn('[Redis] Client initialization error:', error.message);
+    redisClient.on('end', () => {
+      console.warn('[Redis] Connection closed.');
+    });
+  } catch (error) {
+    console.warn('[Redis] Client initialization error:', error.message);
+  }
+} else {
+  console.log('[Redis] REDIS_URL not provided. Redis operations will be safely bypassed.');
 }
 
 /**
